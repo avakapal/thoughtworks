@@ -6,7 +6,7 @@ copy the yaml file to your cluster location/jumpserver
 Kubectl apply -f mediwiki.yaml 
 ```
 ## How to access the application 
-execute kubectl get svc to get 
+execute kubectl get svc to get the external ip and port to access 
 ```bash
 example:
 debbieraay@cloudshell:~ (trim-heaven-271012)$ kubectl get svc
