@@ -1,0 +1,96 @@
+kind: Service 
+apiVersion: v1 
+metadata:
+  name: mediawiki-service 
+spec:
+  # Expose the service on a static port on each node
+  # so that we can access the service from outside the cluster 
+  type: NodePort
+
+  # When the node receives a request on the static port (30163)
+  # "select pods with the label 'app' set to 'echo-hostname'"
+  # and forward the request to one of them
+  selector:
+    app: mediawiki 
+
+  ports:
+    # Three types of ports for a service
+    # nodePort - a static port assigned on each the node
+    # port - port exposed internally in the cluster
+    # targetPort - the container port to send requests to
+    - nodePort: 30165
+      port: 80
+      targetPort: 80
+  type: LoadBalancer    
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mw-pv-claim
+  labels:
+    app: mediawiki
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: mediawiki-mw
+  labels:
+    app: mediawiki
+spec:
+  selector:
+    matchLabels:
+      app: mediawiki
+      tier: mw
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mediawiki
+        tier: mw
+    spec:
+      containers:
+      - image: mediawiki:stable
+        name: mw
+        ports:
+        - containerPort: 80
+          name: mw
+        volumeMounts:
+        - name: mw-persistent-storage
+          mountPath: /var/lib/mw
+      volumes:
+      - name: mw-persistent-storage
+        persistentVolumeClaim:
+          claimName: mw-pv-claim
+---
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: mediawiki-mw
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: mediawiki-mw
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: AverageValue
+        averageValue: 100Mi
+
