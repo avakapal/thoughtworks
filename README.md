@@ -1,7 +1,7 @@
 # thoughtworks POC
 Installation of mediwiki with scaling enabled on memort and cpu limits
 ## Installation
-copy the yaml file to ypur cluster location/jumpserver
+copy the yaml file to your cluster location/jumpserver
 ```bash
 Kubectl apply -f mediwiki.yaml 
 ```
